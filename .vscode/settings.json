@@ -1,0 +1,27 @@
+{
+  "files.watcherExclude": {
+    "**/build/**": true,
+    "**/.dart_tool/**": true,
+    "**/.gradle/**": true,
+    "**/android/.gradle/**": true,
+    "**/android/app/build/**": true,
+    "**/ios/Pods/**": true,
+    "**/ios/.symlinks/**": true,
+    "**/windows/flutter/ephemeral/**": true,
+    "**/linux/flutter/ephemeral/**": true,
+    "**/macos/Flutter/ephemeral/**": true
+  },
+  "files.exclude": {
+    "**/build": true,
+    "**/.dart_tool": true
+  },
+  "search.exclude": {
+    "**/build": true,
+    "**/.dart_tool": true,
+    "**/.gradle": true,
+    "**/ios/Pods": true
+  },
+  "dart.analyzerVMArgs": ["--old_gen_heap_size=1024"],
+  "dart.previewFlutterUiGuides": false,
+  "dart.closingLabels": false
+}
