@@ -2,13 +2,12 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_hungray/Core/Constanst/app_Colors.dart';
 import 'package:flutter_application_hungray/Core/Network/api_erorr.dart';
-import 'package:flutter_application_hungray/Core/Network/api_service.dart';
 import 'package:flutter_application_hungray/Features/auth/data/auth_repo.dart';
 import 'package:flutter_application_hungray/Features/auth/view/signup_view.dart';
 import 'package:flutter_application_hungray/Features/auth/widgets/custom_btn.dart';
 import 'package:flutter_application_hungray/Features/auth/widgets/custom_user_text_filed.dart';
 import 'package:flutter_application_hungray/root.dart';
-import 'package:flutter_application_hungray/shared/custom_text.dart';
+import 'package:flutter_application_hungray/shared/custom_Snack.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:gap/gap.dart';
 
@@ -25,69 +24,50 @@ class _LoginViewState extends State<LoginView> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
-
   bool isLoading = false;
 
   AuthRepo authRepo = AuthRepo();
 
   Future<void> login() async {
+    if (formKey.currentState!.validate()) {
+      setState(() => isLoading = true);
+    }
+    {
+      // هذا الشرط يتحقق من صحة النموذج قبل متابعة عملية تسجيل الدخول يسوي فارغ الحقول اذا كانت صحيحة
+      try {
+        final user = await authRepo.login(
+          emailController.text.trim(),
+          passwordController.text.trim(),
+        );
+        if (!context.mounted) return;
+        if (user != null) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (c) => const Root()),
+            (route) => false,
+          );
+        }
 
-   if (formKey.currentState!.validate()) 
-    setState(() => isLoading = true);{ // هذا الشرط يتحقق من صحة النموذج قبل متابعة عملية تسجيل الدخول يسوي فارغ الحقول اذا كانت صحيحة
-    try {
-     final user = await authRepo.login(emailController.text.trim(), passwordController.text.trim());
-     if (!context.mounted) return;
-     if (user !=null){
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (c) => const Root()),
-        (route) => false,
-      );
-     }
-     
-      setState(() => isLoading = false);
-   } catch (e) {
-     setState(() => isLoading = false);
-     String errorMsg = "unhandled error";
-     if (e is ApiErorr){
-      errorMsg = e.message;
-     }
-     if (!context.mounted) return;
-     ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-          margin: const EdgeInsets.only(bottom: 30, left: 20, right: 20),
-          elevation: 10,
-          behavior: SnackBarBehavior.floating,
-          clipBehavior: Clip.antiAliasWithSaveLayer,
-          backgroundColor: Colors.red.shade900,
-          content: Row(
-            children: [
-
-            Icon(CupertinoIcons.info,color: Colors.white,),
-            Gap(14),
-            
-              CustomText(
-                text: errorMsg,
-                color: Colors.white,
-                fontsize: 12,
-                fontweight: FontWeight.w600,
-              ),
-            ],
-          ),
-        ),
-      );
-   } 
-   }
+        setState(() => isLoading = false);
+      } catch (e) {
+        setState(() => isLoading = false);
+        String errorMsg = "unhandled error";
+        if (e is ApiErorr) {
+          errorMsg = e.message;
+        }
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(CustomSnackBar(errorMsg));
+      }
+    }
   }
 
-  
+  @override
+  void initState() {
+    emailController.text = 'Sonic@gmail.com';
+    passwordController.text = '123456';
+    super.initState();
+  }
 
-
-
-
-
- 
   @override
   void dispose() {
     emailController.dispose();
@@ -146,135 +126,147 @@ class _LoginViewState extends State<LoginView> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Form(
-          key: formKey,
-          child: Column(
-            children: [
-              SizedBox(height: MediaQuery.of(context).size.height * 0.08),
-              const Gap(36),
-              SvgPicture.asset(
-                "assets/logo/logo.svg",
-                colorFilter: ColorFilter.mode(
-                  AppColors.primary,
-                  BlendMode.srcIn,
-                ),
-                height: 58,
-              ),
-              const Gap(18),
-              const Text(
-                "Welcome to our Food App",
-                style: TextStyle(
-                  color: Color(0xFF565656),
-                  fontSize: 24,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-              const Spacer(flex: 1),
-              Expanded(
-                flex: 6,
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.fromLTRB(22, 34, 22, 24),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(32),
-                      topRight: Radius.circular(32),
-                    ),
+ @override
+Widget build(BuildContext context) {
+  return Scaffold(
+    backgroundColor: Colors.white,
+    body: SafeArea(
+      child: Form(
+        key: formKey,
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
+          ),
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 22),
+            child: Column(
+              children: [
+                SizedBox(height: MediaQuery.of(context).size.height * 0.08),
+                SvgPicture.asset(
+                  "assets/logo/logo.svg",
+                  colorFilter: ColorFilter.mode(
+                    AppColors.primary,
+                    BlendMode.srcIn,
                   ),
-                  child: StretchingOverscrollIndicator(
-                    axisDirection: AxisDirection.down,
-                    child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(
-                        parent: AlwaysScrollableScrollPhysics(),
+                  height: 58,
+                ),
+                const Gap(12),
+                const Text(
+                  "Welcome Back, Discover The Fast Food",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFF565656),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+                const Gap(40),
+
+                
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: const Color.fromARGB(255, 234, 232, 227), 
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Column(
+                    children: [
+                      CustomUserTextField(
+                        controller: emailController,
+                        labelText: "Email Address",
+                        keyboardType: TextInputType.emailAddress,
                       ),
-                      keyboardDismissBehavior:
-                          ScrollViewKeyboardDismissBehavior.onDrag,
-                      child: Column(
-                        children: [
-                          CustomUserTextField(
-                            controller: emailController,
-                            labelText: "Email",
-                          ),
-                          CustomUserTextField(
-                            controller: passwordController,
-                            labelText: "Password",
-                            isPassword: true,
-                          ),
-                          const Gap(26),
-                         
-                           Column(
-                              children: [
-                                isLoading ? CupertinoActivityIndicator(
-                            color: Colors.white,)
-                                :CustomAuthBtn(
-                                  onTap: login,
-                                  text: "Login",
-                                  color: Colors.white,
-                                  fontsize: 20,
-                                  fontweight: FontWeight.w600,
-                                  height: 50,
-                                  width: double.infinity,
-                                ),
+                      const Gap(14),
+                      CustomUserTextField(
+                        controller: passwordController,
+                        labelText: "Password",
+                        isPassword: true,
+                        keyboardType: TextInputType.visiblePassword,
+                      ),
+                      const Gap(24),
 
-                                const Gap(20),
-
-                                CustomAuthBtn(
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => const SignupView(),
-                                      ),
-                                    );
-                                  },
-                                  text: "Create an account",
-                                  color: AppColors.primary,
-                                  fontsize: 20,
-                                  fontweight: FontWeight.w600,
-                                  backgroundColor: Colors.white,
-                                  height: 50,
-                                  width: double.infinity,
+                      isLoading
+                          ? const CupertinoActivityIndicator(
+                              color: AppColors.primary,
+                            )
+                          : SizedBox(
+                              width: double.infinity,
+                              height: 55,
+                              child: ElevatedButton(
+                                onPressed: login,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  elevation: 0,
                                 ),
-                              ],
+                                child: const Text(
+                                  "Login",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
                             ),
-                             
-                           
-                          const Gap(20),
 
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const Root(),
-                                ),
-                              );
-                            },
-                            child: const Text(
-                              "Continue as Guest ?",
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.orange,
+                      const Gap(16),
+
+                      Row(
+                        children: [
+                          Expanded(
+                            child: SizedBox(
+                              height: 50,
+                              child: CustomAuthBtn(
+                                onTap:(){ Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const SignupView(),
+                                  ),
+                                );
+                                },
+                                text: 'Singup', 
+                                color: AppColors.primary,
+                                fontsize: 20,
+                                backgroundColor: Colors.white,
+                                
+                                )
+                            ),
+                          ),
+                          const Gap(14),
+                          Expanded(
+                            child: SizedBox(
+                              height: 50,
+                              child: CustomAuthBtn(
+                                onTap: () {
+                                  Navigator.pushAndRemoveUntil(
+                                    context,
+                                    MaterialPageRoute(builder: (c) => const Root()),
+                                    (route) => false,
+                                  );
+                                },
+                                text: 'Guest', 
+                                color: AppColors.primary,
+                                fontsize: 20,
+                                backgroundColor: Colors.white,
                               ),
                             ),
                           ),
                         ],
                       ),
-                    ),
+                    ],
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

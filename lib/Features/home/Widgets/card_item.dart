@@ -23,7 +23,7 @@ class CardItem extends StatelessWidget {
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
-        side: BorderSide(color: Colors.grey.shade300, width: 1),
+        side: BorderSide(color: const Color.fromARGB(255, 242, 242, 239), width: 1),
       ),
       color: const Color.fromARGB(255, 255, 255, 255),
       child: Padding(

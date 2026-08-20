@@ -32,7 +32,7 @@ class _HomeViewState extends State<HomeView> {
               automaticallyImplyLeading: false,
               floating: false,
               pinned: true,
-              toolbarHeight: 230,
+              toolbarHeight: 200,
               scrolledUnderElevation: 0,
               flexibleSpace: Padding(
                 padding: const EdgeInsets.only(top: 39,right: 20,left: 20),

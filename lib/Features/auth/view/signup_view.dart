@@ -1,8 +1,12 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_hungray/Core/Constanst/app_Colors.dart';
+import 'package:flutter_application_hungray/Core/Network/api_erorr.dart';
+import 'package:flutter_application_hungray/Features/auth/data/auth_repo.dart';
 import 'package:flutter_application_hungray/Features/auth/view/login_view.dart';
 import 'package:flutter_application_hungray/Features/auth/widgets/custom_btn.dart';
 import 'package:flutter_application_hungray/Features/auth/widgets/custom_user_text_filed.dart';
+import 'package:flutter_application_hungray/shared/custom_Snack.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:gap/gap.dart';
 
@@ -14,12 +18,49 @@ class SignupView extends StatefulWidget {
 }
 
 class _SignupViewState extends State<SignupView> {
+  bool obscurePassword = true;
   final nameController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final formKey = GlobalKey<FormState>();
+  
+  
+  AuthRepo authRepo = AuthRepo();
+  bool isLoading = false;
+  Future<void>Signup() async{
+  
 
-  bool obscurePassword = true;
+    if (formKey.currentState!.validate()) {
+      setState(() => isLoading = true);
+    }{
+      try {
+        final user = await authRepo.signup(nameController.text.trim(), emailController.text.trim(), passwordController.text.trim());
+        if (!context.mounted) return;
+        if (user !=null){
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (c) => const LoginView()),
+            (route) => false,
+          );
+        }
+        
+         setState(() => isLoading = false);
+    } catch (e) {
+      setState(() => isLoading = false);
+      String errorMsg = "unhandled error";
+      if (e is ApiErorr){
+       errorMsg = e.message;
+      }
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(CustomSnackBar(errorMsg));
+    } 
+    }
+
+
+
+  }
+
+
 
   @override
   void dispose() {
@@ -76,80 +117,85 @@ class _SignupViewState extends State<SignupView> {
       body: SafeArea(
         child: Form(
           key: formKey,
-          child: Column(
-            children: [
-              SizedBox(height: MediaQuery.of(context).size.height * 0.08),
-              const Gap(36),
-              SvgPicture.asset(
-                "assets/logo/logo.svg",
-                colorFilter: ColorFilter.mode(AppColors.primary, BlendMode.srcIn),
-                height: 58,
-              ),
-              const Gap(18),
-              const Text(
-                "Create an account",
-                style: TextStyle(color: Color(0xFF565656), fontSize: 24, fontWeight: FontWeight.w400),
-              ),
-              const Spacer(flex: 1),
-              Expanded(
-                flex: 6,
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.fromLTRB(22, 34, 22, 24),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: const BorderRadius.only(topLeft: Radius.circular(32), topRight: Radius.circular(32)),
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
+            ),
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            child: Padding(
+               padding: const EdgeInsets.symmetric(horizontal: 22),
+              child: Column(
+                children: [
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.08),
+                  const Gap(36),
+                  SvgPicture.asset(
+                    "assets/logo/logo.svg",
+                    colorFilter: ColorFilter.mode(AppColors.primary, BlendMode.srcIn),
+                    height: 58,
                   ),
-                  child: StretchingOverscrollIndicator(
-                    axisDirection: AxisDirection.down,
-                    child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-                      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                      child: Column(
-                      children: [
-                        CustomUserTextField(controller: nameController, labelText: "Name"),
-                        const Gap(20),
-                        CustomUserTextField(controller: emailController, labelText: "Email", keyboardType: TextInputType.emailAddress),
-                        const Gap(20),
-                        CustomUserTextField(controller: passwordController, labelText: "Password", isPassword: true, suffixIcon: Icon(Icons.lock, color: Colors.white54, size: 18)),
-                        const Gap(26),
+                  const Gap(18),
+                  const Text(
+                    "Create an account",
+                    style: TextStyle(color: Color(0xFF565656), fontSize: 24, fontWeight: FontWeight.w400),
+                  ),
+                  const Gap(40),
+
+                  Container(
+                     width: double.infinity,
+                     padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF2F0EA),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Column(
+                    children: [
+                      CustomUserTextField(controller: nameController, labelText: "Name"),
+                      const Gap(14),
+                      CustomUserTextField(controller: emailController, labelText: "Email", keyboardType: TextInputType.emailAddress),
+                      const Gap(14),
+                      CustomUserTextField(controller: passwordController, labelText: "Password", isPassword: true, suffixIcon: Icon(Icons.lock, color: Colors.white54, size: 18)),
+                      const Gap(24),
+                      isLoading ? CupertinoActivityIndicator(color: Colors.white) 
+                      :CustomAuthBtn(
+                                onTap: Signup,
+                                text: "Sign Up",
+                                color: AppColors.primary,
+                                fontsize: 20,
+                                fontweight: FontWeight.w600,
+                                height: 50,
+                                width: double.infinity,
+                                backgroundColor: Colors.white,
+                              ),
+                       const Gap(16),
+                                    
                         SizedBox(
                           height: 50,
-                          width: double.infinity,
                           child: CustomAuthBtn(
-                            onTap: () {
-                              if (formKey.currentState!.validate()) {
-                                // Handle sign up logic here
-                              }
-                            },
-                            text: "Sign Up",
-                            color: Colors.white,
-                            backgroundColor: AppColors.primary,
-                          ),
+                              onTap: () {
+                                Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(builder: (c) => const LoginView()),
+                                  (route) => false,
+                                );
+                              },
+                              text: "back to login",
+                              textColor: Colors.black, 
+                              color: AppColors.primary,
+                              fontsize: 20,
+                              fontweight: FontWeight.w600,
+                              height: 50,
+                              width: double.infinity,
+                              backgroundColor: Colors.white,      
+                                                           
+                            ),
                         ),
-                        const SizedBox(height: 20),
-                        SizedBox(
-                          height: 50,
-                          width: double.infinity,
-                          child:CustomAuthBtn(
-                            onTap: () {
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(builder: (context) => const LoginView()),
-                              );
-                            },
-                            text: "back to login ",
-                            color: AppColors.primary,
-                            backgroundColor: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                    ),
+                        
+                    ],
+                   ),
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

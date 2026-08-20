@@ -10,8 +10,8 @@ class CustomAuthBtn extends StatelessWidget {
     this.fontweight = FontWeight.w500,
     this.borderColor,
     this.backgroundColor = Colors.transparent,
-    this.height = 50,
-    this.width = double.infinity,
+    this.height = 50, this.width, this.textColor, this.showbroder=true,
+    
   });
 
   final VoidCallback onTap;
@@ -22,7 +22,9 @@ class CustomAuthBtn extends StatelessWidget {
   final Color? borderColor;
   final Color backgroundColor;
   final double height ;
-  final double width ;
+  final double? width ;
+  final Color? textColor;
+  final bool showbroder;
 
   @override
   Widget build(BuildContext context) {
@@ -33,15 +35,15 @@ class CustomAuthBtn extends StatelessWidget {
         onPressed: onTap,
         style: OutlinedButton.styleFrom(
           backgroundColor: backgroundColor,
-          side: BorderSide(color: borderColor ?? color, width: 1.5),
-          shape: RoundedRectangleBorder(
+          side:showbroder? BorderSide(color: borderColor ?? color, width: 1.5): BorderSide.none,
+          shape:RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
         ),
         child: Text(
           text,
           style: TextStyle(
-            color: color,
+            color: textColor ?? color,
             fontSize: fontsize,
             fontWeight: fontweight,
           ),
