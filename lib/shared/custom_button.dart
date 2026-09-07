@@ -8,8 +8,9 @@ class CustomButton extends StatelessWidget {
   final double? width;
   final Color? color;
   final double? height;
+  final double? radius;
 
-  const CustomButton({super.key, required this.text, required this.onPressed, this.width, this.color, this.height});
+  const CustomButton({super.key, required this.text,  required this.onPressed, this.width, this.color, this.height, this.radius});
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +24,7 @@ class CustomButton extends StatelessWidget {
           foregroundColor: Colors.white,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius ?? 14)),
         ),
       child: CustomText(
         text: text,

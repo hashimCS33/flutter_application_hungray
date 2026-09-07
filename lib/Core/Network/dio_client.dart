@@ -14,13 +14,20 @@ class DioClient {
   );
 
   DioClient() {
+
+    // _dio.interceptors.add(LogInterceptor(   
+    //  requestBody: true,
+    //  responseBody: true,
+
+    // ));
+
     // You can add interceptors or other configurations here if needed
     //فاىد هذه توكن ه و ان اعرف هي id شخص الي يشتري او  من مشتريات انه هو شخص نفسه اشتري هاي دالة تتحق
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest:(options, handler) async {
           final token = await prefHelper.getToken(); // Replace with your actual token
-          if (token !=null && token.isNotEmpty) {
+          if (token !=null && token.isNotEmpty && token != 'guest' ) {
           options.headers['Authorization'] = 'Bearer $token';
             
           }

@@ -126,147 +126,135 @@ class _LoginViewState extends State<LoginView> {
     );
   }
 
- @override
-Widget build(BuildContext context) {
-  return Scaffold(
-    backgroundColor: Colors.white,
-    body: SafeArea(
-      child: Form(
-        key: formKey,
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(
-            parent: AlwaysScrollableScrollPhysics(),
-          ),
-          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 22),
-            child: Column(
-              children: [
-                SizedBox(height: MediaQuery.of(context).size.height * 0.08),
-                SvgPicture.asset(
-                  "assets/logo/logo.svg",
-                  colorFilter: ColorFilter.mode(
-                    AppColors.primary,
-                    BlendMode.srcIn,
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Form(
+          key: formKey,
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
+            ),
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 22),
+              child: Column(
+                children: [
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.08),
+                  SvgPicture.asset(
+                    "assets/logo/logo.svg",
+                    colorFilter: ColorFilter.mode(
+                      AppColors.primary,
+                      BlendMode.srcIn,
+                    ),
+                    height: 58,
                   ),
-                  height: 58,
-                ),
-                const Gap(12),
-                const Text(
-                  "Welcome Back, Discover The Fast Food",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Color(0xFF565656),
-                    fontSize: 15,
-                    fontWeight: FontWeight.w400,
+                  const Gap(12),
+                  const Text(
+                    "Welcome Back, Discover The Fast Food",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Color(0xFF565656),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w400,
+                    ),
                   ),
-                ),
-                const Gap(40),
+                  const Gap(40),
 
-                
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: const Color.fromARGB(255, 234, 232, 227), 
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Column(
-                    children: [
-                      CustomUserTextField(
-                        controller: emailController,
-                        labelText: "Email Address",
-                        keyboardType: TextInputType.emailAddress,
-                      ),
-                      const Gap(14),
-                      CustomUserTextField(
-                        controller: passwordController,
-                        labelText: "Password",
-                        isPassword: true,
-                        keyboardType: TextInputType.visiblePassword,
-                      ),
-                      const Gap(24),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: const Color.fromARGB(255, 234, 232, 227),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Column(
+                      children: [
+                        CustomUserTextField(
+                          controller: emailController,
+                          labelText: "Email Address",
+                          keyboardType: TextInputType.emailAddress,
+                        ),
+                        const Gap(14),
+                        CustomUserTextField(
+                          controller: passwordController,
+                          labelText: "Password",
+                          isPassword: true,
+                          keyboardType: TextInputType.visiblePassword,
+                        ),
+                        const Gap(24),
 
-                      isLoading
-                          ? const CupertinoActivityIndicator(
+                        isLoading
+                            ? const CupertinoActivityIndicator(
                               color: AppColors.primary,
                             )
-                          : SizedBox(
-                              width: double.infinity,
-                              height: 55,
-                              child: ElevatedButton(
-                                onPressed: login,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primary,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                  elevation: 0,
-                                ),
-                                child: const Text(
-                                  "Login",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                            : CustomAuthBtn(
+                              onTap: login,
+                              text: 'Login',
+                              color: const Color.fromARGB(255, 246, 247, 247),
+                              backgroundColor: AppColors.primary,
+                              width: 300,
+                              height: 58,
+                            ),
+
+                        const Gap(16),
+
+                        Row(
+                          children: [
+                            Expanded(
+                              child: SizedBox(
+                                height: 50,
+                                child: CustomAuthBtn(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder:
+                                            (context) => const SignupView(),
+                                      ),
+                                    );
+                                  },
+                                  text: 'Singup',
+                                  color: AppColors.primary,
+                                  fontsize: 20,
+                                  backgroundColor: Colors.white,
                                 ),
                               ),
                             ),
-
-                      const Gap(16),
-
-                      Row(
-                        children: [
-                          Expanded(
-                            child: SizedBox(
-                              height: 50,
-                              child: CustomAuthBtn(
-                                onTap:(){ Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const SignupView(),
-                                  ),
-                                );
-                                },
-                                text: 'Singup', 
-                                color: AppColors.primary,
-                                fontsize: 20,
-                                backgroundColor: Colors.white,
-                                
-                                )
-                            ),
-                          ),
-                          const Gap(14),
-                          Expanded(
-                            child: SizedBox(
-                              height: 50,
-                              child: CustomAuthBtn(
-                                onTap: () {
-                                  Navigator.pushAndRemoveUntil(
-                                    context,
-                                    MaterialPageRoute(builder: (c) => const Root()),
-                                    (route) => false,
-                                  );
-                                },
-                                text: 'Guest', 
-                                color: AppColors.primary,
-                                fontsize: 20,
-                                backgroundColor: Colors.white,
+                            const Gap(14),
+                            Expanded(
+                              child: SizedBox(
+                                height: 50,
+                                child: CustomAuthBtn(
+                                  onTap: () {
+                                    Navigator.pushAndRemoveUntil(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (c) => const Root(),
+                                      ),
+                                      (route) => false,
+                                    );
+                                  },
+                                  text: 'Guest',
+                                  color: AppColors.primary,
+                                  fontsize: 20,
+                                  backgroundColor: Colors.white,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }

@@ -1,7 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_hungray/Core/Network/api_erorr.dart';
-import 'package:flutter_application_hungray/Core/utils/image_helper.dart';
 import 'package:flutter_application_hungray/Features/auth/data/auth_repo.dart';
 import 'package:flutter_application_hungray/Features/auth/data/user_model.dart';
 import 'package:flutter_application_hungray/Features/auth/view/login_view.dart';
@@ -9,6 +10,7 @@ import 'package:flutter_application_hungray/Features/auth/widgets/custom_btn.dar
 import 'package:flutter_application_hungray/shared/custom_snack.dart';
 import 'package:flutter_application_hungray/shared/custom_text.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import '../widgets/custom_user_text_filed.dart';
 import 'package:flutter_application_hungray/Core/Constanst/app_Colors.dart';
@@ -22,16 +24,30 @@ class ProfileView extends StatefulWidget {
 }
 
 class _ProfileViewState extends State<ProfileView> {
-  String selectedPaymentMethod = 'Visa';
   final TextEditingController _name = TextEditingController();
   final TextEditingController _email = TextEditingController();
   final TextEditingController _address = TextEditingController();
   final TextEditingController _password = TextEditingController();
   final TextEditingController _visa = TextEditingController();
 
+  bool isGuest =false;
   UserModel? userModel;
+  String? SelectedImage;
+  bool isLoading = false;
+  bool _editingVisa = false;
   AuthRepo authRepo = AuthRepo();
 
+  Future <void> autoLogin ()async{
+    final user =await authRepo.autoLogin();
+
+     setState(() => isGuest =authRepo.isGuest);
+
+    if (user != null ) setState(() => userModel = user );
+  } 
+
+
+
+  //get profile data
   Future<void> getProfileData() async {
     try {
       final user = await authRepo.getProfileData();
@@ -47,17 +63,97 @@ class _ProfileViewState extends State<ProfileView> {
     }
   }
 
+  //update profile data
+  Future<void> updateProfileData() async {
+    try {
+      setState(() => isLoading = true);
+      final user = await authRepo.updatePofileData(
+        name: _name.text.trim(),
+        email: _email.text.trim(),
+        address: _address.text.trim(),
+        imagePath: SelectedImage,
+        visa: _visa.text.trim(),
+      );
+      setState(() => isLoading = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(CustomSnackBar('profile update scccessfully'));
+      setState(() => userModel = user);
+      await getProfileData();
+    } catch (e) {
+      String erorrmsg = "Failed to update profile";
+      if (e is ApiErorr) {
+        erorrmsg = e.message;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(CustomSnackBar(erorrmsg));
+    }
+  }
+
+  //pick image
+  Future<void> pickImage() async {
+    final pickedImage = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+    );
+
+    if (pickedImage != null) {
+      setState(() {
+        SelectedImage = pickedImage.path;
+      });
+    }
+  }
+
+  //remove image
+  Future<void> removeImage() async {
+    if (SelectedImage != null) {
+      setState(() => SelectedImage = null);
+      return;
+    }
+
+    if (userModel?.imageUrl == null || userModel!.imageUrl!.isEmpty) return;
+
+    try {
+      setState(() => isLoading = true);
+      final user = await authRepo.updatePofileData(
+        name: _name.text.trim(),
+        email: _email.text.trim(),
+        address: _address.text.trim(),
+        visa: _visa.text.trim(),
+        removeImage: true,
+      );
+      setState(() {
+        isLoading = false;
+        userModel = user;
+      });
+    } catch (e) {
+      setState(() => isLoading = false);
+      String erorrmsg = "Failed to remove image";
+      if (e is ApiErorr) {
+        erorrmsg = e.message;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(CustomSnackBar(erorrmsg));
+    }
+  }
+
+
+//logout 
+
+Future <void> logout () async {
+
+ await authRepo.logout();
+
+ await Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginView(),));
+
+}
+
   @override
   void initState() {
+    autoLogin();
     getProfileData().then((v) {
       if (userModel != null) {
         _name.text = userModel!.name ?? '';
         _email.text = userModel!.Email ?? '';
-        _address.text =
-            userModel?.address != null
-                ? "55 Najfa, IRAQ"
-                : userModel!
-                    .address!; // Set the address to "adress" if it's null, otherwise use the actual address
+        _address.text = userModel!.address ?? "55 Najfa, IRAQ";
+        _visa.text = userModel!.visa ?? '';
       }
     });
 
@@ -75,7 +171,8 @@ class _ProfileViewState extends State<ProfileView> {
 
   @override
   Widget build(BuildContext context) {
-    return RefreshIndicator(
+    if (!isGuest){
+        return RefreshIndicator(
       displacement: 60,
       color: Colors.white,
       backgroundColor: AppColors.primary,
@@ -97,247 +194,342 @@ class _ProfileViewState extends State<ProfileView> {
             scrolledUnderElevation: 0.0,
           ),
           body: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-            child: SingleChildScrollView(
-              child: Skeletonizer(
-                enabled: userModel == null,
-                child: Column(
-                  children: [
-                    Gap(10),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        CustomText(
-                          text: 'Profile',
-                          fontweight: FontWeight.w600,
-                          fontsize: 24,
+            child: Skeletonizer(
+              enabled: userModel == null,
+              child: Column(
+                children: [
+                  Gap(10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        icon: const Icon(
+                          CupertinoIcons.back,
                           color: Colors.black87,
                         ),
-                        Gap(20),
-                        IconButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
-                          icon: SvgPicture.asset(
-                            'assets/icons/settings.svg',
-                            height: 24,
-                            width: 24,
-                            color: Colors.black87,
-                          ),
-                        ),
-                      ],
-                    ),
-          
-                    Gap(20),
-          
-                    // Profile picture
-                    Center(
-                      child: Container(
-                        height: 120,
-                        width: 120,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          image:
-                              userModel?.imageUrl != null &&
-                                      userModel!.imageUrl!.isNotEmpty
-                                  ? DecorationImage(
-                                    image: NetworkImage(
-                                      ImageHelper.getImageUrl(
-                                        userModel!.imageUrl!,
-                                      ),
-                                    ),
-          
-                                    fit: BoxFit.cover,
-                                  )
-                                  : null,
-                          border: Border.all(
-                            color: AppColors.primary,
-                            width: 2,
-                          ),
-                          color: Colors.grey.shade300,
-                        ),
                       ),
-                    ),
-          
-                    Gap(20),
-          
-                    // User information fields
-                    SizedBox(
-                      width: double.infinity,
-                      child: Column(
-                        children: [
-                          CustomUserTextField(
-                            controller: _name,
-                            labelText: 'Name',
-                            keyboardType: TextInputType.name,
-                            hinttext: 'Enter your Name',
-                          ),
-          
-                          Gap(10),
-                          CustomUserTextField(
-                            controller: _email,
-                            labelText: 'Email',
-                            keyboardType: TextInputType.emailAddress,
-                            hinttext: 'Enter your Email',
-                          ),
-          
-                          Gap(10),
-                          CustomUserTextField(
-                            controller: _address,
-                            labelText: 'Delivery address',
-                            keyboardType: TextInputType.streetAddress,
-                            hinttext: 'Enter your Delivery address',
-                          ),
-                        ],
-                      ),
-                    ),
-          
-                    Gap(20),
-                    Divider(
-                      color: const Color.fromARGB(255, 14, 13, 13),
-                      thickness: 1,
-                    ),
-                    Gap(10),
-          
-                    userModel?.visa !=
-                            null // Check if the user has a Visa card edit تعديل لانه اكو مشكلة انه كارد ما جاي يطلع null
-                        ? CustomUserTextField(
-                          controller: _visa,
-                          labelText: 'Visa card',
-                          keyboardType: TextInputType.number,
-                          hinttext: 'ADD VISA CARD',
-                        )
-                        : Material(
-                          color: const Color(0xFFD6EAF3),
-                          borderRadius: BorderRadius.circular(15),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(15),
-                              border: Border.all(
-                                color:
-                                    selectedPaymentMethod == 'Visa'
-                                        ? AppColors.primary
-                                        : Colors.transparent,
-                                width: 2,
-                              ),
-                            ),
-                            child: ListTile(
-                              onTap:
-                                  () => setState(
-                                    () => selectedPaymentMethod = 'Visa',
-                                  ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(13),
-                              ),
-                              contentPadding: EdgeInsets.symmetric(
-                                vertical: 2,
-                                horizontal: 16,
-                              ),
-                              leading: Image.asset(
-                                'assets/icons/visa.png',
-                                height: 60,
-                                width: 48,
-                                fit: BoxFit.contain,
-                              ),
-                              title: CustomText(
-                                text: 'Debit card',
-                                fontweight: FontWeight.w600,
-                                fontsize: 16,
-                                color: Colors.black87,
-                              ),
-                              subtitle: CustomText(
-                                text:
-                                    userModel?.visa ??
-                                    "**** **** **** 2342", // بعجل ما يكون عندك رقم البطاقة الحقيقي، ممكن تحط أي نص هنا بعدين ارجعها
-                                fontweight: FontWeight.w400,
-                                fontsize: 13,
-                                color: Colors.black54,
-                              ),
-                              trailing: Radio<String>(
-                                activeColor: AppColors.primary,
-                                value: 'Visa',
-                                groupValue: selectedPaymentMethod,
-                                onChanged:
-                                    (value) => setState(
-                                      () => selectedPaymentMethod = value!,
-                                    ),
-                              ),
-                            ),
-                          ),
+                      IconButton(
+                        onPressed: () {},
+                        icon: SvgPicture.asset(
+                          'assets/icons/settings.svg',
+                          height: 24,
+                          width: 24,
+                          color: Colors.black87,
                         ),
-                    Gap(400),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          bottomSheet: Container(
-            height: 80,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(color: Colors.grey.shade400, blurRadius: 20),
-              ],
-            ),
-
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  // Edit profile button
-                  Row(
-                    children: [
-                      CustomAuthBtn(
-                        onTap: () {
-                          // Handle edit profile action
-                        },
-                        text: 'Edit Profile',
-                        color: AppColors.primary,
-                        fontsize: 24,
-                        fontweight: FontWeight.w600,
-                        height: 40,
-                        width: 170,
-                        backgroundColor: Colors.white,
-                        showbroder: false,
-                      ),
-
-                      Icon(
-                        CupertinoIcons.pencil,
-                        color: AppColors.primary,
-                        size: 20,
                       ),
                     ],
                   ),
 
-                  // Logout button
+                  Gap(20),
+
+                  // Profile picture //اكو مشكلة بعدين ارجع اله شوفه
+                  Center(
+                    child: Container(
+                      height: 120,
+                      width: 120,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.grey.shade400,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(
+                          4,
+                        ), // الفراغ الابيض بين البوردر والصورة
+                        child: ClipOval(
+                          child: Container(
+                            color: Colors.grey.shade300,
+                            child:
+                                SelectedImage != null
+                                    ? Image.file(
+                                      File(SelectedImage!),
+                                      fit: BoxFit.cover,
+                                      width: double.infinity,
+                                      height: double.infinity,
+                                    )
+                                    : (userModel?.imageUrl != null &&
+                                        userModel!.imageUrl!.isNotEmpty)
+                                    ? Image.network(
+                                      userModel!.imageUrl!,
+                                      fit: BoxFit.cover,
+                                      width: double.infinity,
+                                      height: double.infinity,
+                                      errorBuilder:
+                                          (context, error, builder) => Icon(
+                                            Icons.person,
+                                            size: 60,
+                                            color: Colors.grey,
+                                          ),
+                                    )
+                                    : Icon(
+                                      Icons.person,
+                                      size: 60,
+                                      color: const Color.fromARGB(255, 250, 249, 249),
+                                    ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  Gap(10),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: pickImage,
+                        icon: const Icon(
+                          Icons.camera_alt_outlined,
+                          size: 18,
+                          color: Colors.white,
+                        ),
+                        label: const Text('upload image'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color.fromARGB(255, 8, 0, 250),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(50),
+                          ),
+                        ),
+                      ),
+                      Gap(10),
+                      ElevatedButton.icon(
+                        onPressed: removeImage,
+                        icon: const Icon(
+                          Icons.delete_outline,
+                          size: 18,
+                          color: Colors.white,
+                        ),
+                        label: const Text('remove image'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red.shade700,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(50),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Gap(30),
+
+                  // User information fields
+                  SizedBox(
+                    width: double.infinity,
+                    child: Column(
+                      children: [
+                        CustomUserTextField(
+                          controller: _name,
+                          labelText: 'Name',
+                          keyboardType: TextInputType.name,
+                          hinttext: 'Enter your Name',
+                        ),
+
+                        Gap(10),
+                        CustomUserTextField(
+                          controller: _email,
+                          labelText: 'Email',
+                          keyboardType: TextInputType.emailAddress,
+                          hinttext: 'Enter your Email',
+                        ),
+
+                        Gap(10),
+                        CustomUserTextField(
+                          controller: _address,
+                          labelText: 'Delivery address',
+                          keyboardType: TextInputType.streetAddress,
+                          hinttext: 'Enter your Delivery address',
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  Gap(20),
+                  Divider(
+                    color: const Color.fromARGB(255, 14, 13, 13),
+                    thickness: 1,
+                  ),
+                  Gap(10),
+
+                  _editingVisa
+                      ? Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: CustomUserTextField(
+                              controller: _visa,
+                              labelText: 'Visa card',
+                              keyboardType: TextInputType.number,
+                              hinttext: 'ADD VISA CARD',
+                            ),
+                          ),
+                          IconButton(
+                            onPressed:
+                                () => setState(() => _editingVisa = false),
+                            icon: Icon(
+                              CupertinoIcons.check_mark_circled_solid,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ],
+                      )
+                      : Material(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(15),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(15),
+                          onTap: () => setState(() => _editingVisa = true),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 14,
+                              horizontal: 16,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF161616),
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            child: Row(
+                              children: [
+                                CustomText(
+                                  text: 'VISA',
+                                  fontweight: FontWeight.w800,
+                                  fontsize: 18,
+                                  color: Colors.white,
+                                ),
+                                Gap(16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      CustomText(
+                                        text: 'Debit card',
+                                        fontweight: FontWeight.w600,
+                                        fontsize: 15,
+                                        color: Colors.white,
+                                      ),
+                                      Gap(4),
+                                      CustomText(
+                                        text:
+                                            (userModel?.visa != null &&
+                                                    userModel!.visa!.isNotEmpty)
+                                                ? '•••• •••• •••• ${userModel!.visa!.length >= 4 ? userModel!.visa!.substring(userModel!.visa!.length - 4) : userModel!.visa}'
+                                                : '•••• •••• •••• 2022',
+                                        fontweight: FontWeight.w400,
+                                        fontsize: 13,
+                                        color: Colors.white70,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      CustomText(
+                                        text: 'Default',
+                                        fontweight: FontWeight.w600,
+                                        fontsize: 12,
+                                        color: Colors.black87,
+                                      ),
+                                      Gap(4),
+                                      Icon(
+                                        Icons.check_circle,
+                                        size: 16,
+                                        color: AppColors.primary,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                  Gap(30),
+
                   Row(
                     children: [
-                      CustomAuthBtn(
-                        onTap: () {
-                          Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(
-                              builder: (c) => const LoginView(),
-                            ),
-                            (route) => false,
-                          );
-                        },
-                        text: 'Logout',
-                        color: AppColors.primary,
-                        fontsize: 24,
-                        fontweight: FontWeight.w600,
-                        height: 40,
-                        width: 140,
-                        backgroundColor: Colors.white,
-                        showbroder: false,
+                      // Edit profile button
+                      Expanded(
+                        child: SizedBox(
+                          height: 50,
+                          child:
+                              isLoading
+                                  ? Container(
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary,
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    child: const Center(
+                                      child: CupertinoActivityIndicator(
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  )
+                                  : ElevatedButton(
+                                    onPressed: updateProfileData,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.primary,
+                                      foregroundColor: Colors.white,
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                    ),
+                                    child: const Text(
+                                      'Edit Profile',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                        ),
                       ),
 
-                      Icon(
-                        CupertinoIcons.arrow_right_square,
-                        color: AppColors.primary,
-                        size: 20,
+                      const Gap(12),
+
+                      // Logout button
+                      Expanded(
+                        child: SizedBox(
+                          height: 50,
+                          child: OutlinedButton(
+                            onPressed: logout,
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.black87,
+                              side: const BorderSide(color: Colors.black87),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            child: const Text(
+                              'Logout',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -348,5 +540,31 @@ class _ProfileViewState extends State<ProfileView> {
         ),
       ),
     );
+ 
+    }else if (isGuest){
+         return Scaffold( 
+         body: Center(
+           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CustomText(text: 'Geust Mode ',color: AppColors.primary,fontsize: 22,fontweight: FontWeight.bold ,),
+              Gap(20),
+              CustomAuthBtn(
+                onTap: (){
+                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => LoginView()));
+                },
+                 text: 'to go Login', 
+                 color: const Color.fromARGB(255, 250, 251, 251),
+                 backgroundColor: AppColors.primary,
+                 
+                 )
+              
+            ],
+           ),
+         )
+         );
+    }
+    return SizedBox();
   }
 }

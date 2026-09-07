@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_hungray/Core/Constanst/app_Colors.dart';
+import 'package:flutter_application_hungray/Features/auth/data/auth_repo.dart';
 import 'package:flutter_application_hungray/Features/auth/view/login_view.dart';
+import 'package:flutter_application_hungray/root.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:gap/gap.dart';
 
@@ -16,6 +18,39 @@ class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
+
+  AuthRepo authRepo = AuthRepo();
+
+  Future<void> checkLogin() async {
+   try{
+      final user= await authRepo.autoLogin();
+
+      if(!mounted) return;
+   
+
+      if (authRepo.isGuest) {
+        // debugPrint('Navgitor to Root as guest');
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => Root()),
+      );
+    } else if (user != null) {
+      // debugPrint('Navgitor to Root as loogined-in user');
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => Root()),
+      );
+    } else {
+      // debugPrint('Navgitor to Root as loogined-no user data');
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => LoginView()),
+      );
+    }
+   }catch (e){
+     print('Erorr From slpash :${e.toString()}');
+   }
+  }
 
   @override
   void initState() {
@@ -39,10 +74,7 @@ class _SplashScreenState extends State<SplashScreen>
     // 4. الانتقال للشاشة التالية بعد 3 ثوانٍ
     Future.delayed(const Duration(seconds: 3), () {
       if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (c) => const LoginView()),
-      );
+      checkLogin();
     });
   }
 
